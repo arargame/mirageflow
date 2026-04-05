@@ -1,6 +1,6 @@
 # Mirage Flow
 
-![Mirage Flow](screenshot.png)
+![Mirage Flow Screenshot](MirageFlow.Shared/Content/FirstScreenShot.png)
 
 Mirage Flow is a dynamic, logic-based physics puzzle game developed using **MonoGame** framework. The core gameplay revolves around a specialized cellular automata-based sand falling physics engine and color grouping algorithms. Players must extract specific colored sand particles (pixels) from a granular image to solve the puzzle.
 
