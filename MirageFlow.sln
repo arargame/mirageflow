@@ -1,0 +1,40 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.0.31903.59
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MirageFlow.Desktop", "MirageFlow.Desktop\MirageFlow.Desktop.csproj", "{47D64BFA-F28D-4838-8284-48D1E42A25AC}"
+EndProject
+Project("{D954291E-2A0B-460D-934E-DC6B0785DB48}") = "MirageFlow.Shared", "MirageFlow.Shared\MirageFlow.Shared.shproj", "{A1B2C3D4-E5F6-7890-1234-567890ABCDEF}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Debug|x64 = Debug|x64
+		Debug|x86 = Debug|x86
+		Release|Any CPU = Release|Any CPU
+		Release|x64 = Release|x64
+		Release|x86 = Release|x86
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{47D64BFA-F28D-4838-8284-48D1E42A25AC}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{47D64BFA-F28D-4838-8284-48D1E42A25AC}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{47D64BFA-F28D-4838-8284-48D1E42A25AC}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{47D64BFA-F28D-4838-8284-48D1E42A25AC}.Debug|x64.Build.0 = Debug|Any CPU
+		{47D64BFA-F28D-4838-8284-48D1E42A25AC}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{47D64BFA-F28D-4838-8284-48D1E42A25AC}.Debug|x86.Build.0 = Debug|Any CPU
+		{47D64BFA-F28D-4838-8284-48D1E42A25AC}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{47D64BFA-F28D-4838-8284-48D1E42A25AC}.Release|Any CPU.Build.0 = Release|Any CPU
+		{47D64BFA-F28D-4838-8284-48D1E42A25AC}.Release|x64.ActiveCfg = Release|Any CPU
+		{47D64BFA-F28D-4838-8284-48D1E42A25AC}.Release|x64.Build.0 = Release|Any CPU
+		{47D64BFA-F28D-4838-8284-48D1E42A25AC}.Release|x86.ActiveCfg = Release|Any CPU
+		{47D64BFA-F28D-4838-8284-48D1E42A25AC}.Release|x86.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(SharedMSBuildProjectFiles) = preSolution
+		MirageFlow.Shared\MirageFlow.Shared.projitems*{47d64bfa-f28d-4838-8284-48d1e42a25ac}*SharedItemsImports = 5
+		MirageFlow.Shared\MirageFlow.Shared.projitems*{a1b2c3d4-e5f6-7890-1234-567890abcdef}*SharedItemsImports = 13
+	EndGlobalSection
+EndGlobal

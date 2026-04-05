@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <MSBuildAllProjects>$(MSBuildAllProjects);$(MSBuildThisFileFullPath)</MSBuildAllProjects>
+    <HasSharedItems>true</HasSharedItems>
+    <SharedGUID>A1B2C3D4-E5F6-7890-1234-567890ABCDEF</SharedGUID>
+  </PropertyGroup>
+  <PropertyGroup Label="Configuration">
+    <Import_RootNamespace>MirageFlow.Shared</Import_RootNamespace>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="$(MSBuildThisFileDirectory)Core\GameApp.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Core\InputManager.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Core\Settings.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Screens\IScreen.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Screens\ScreenManager.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Screens\MenuScreen.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Screens\GameScreen.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Entities\Sprite.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Entities\Sandbox.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Entities\Bucket.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Entities\ConveyorBelt.cs" />
+  </ItemGroup>
+</Project>
