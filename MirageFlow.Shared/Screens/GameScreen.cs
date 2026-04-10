@@ -17,6 +17,7 @@ namespace MirageFlow.Shared.Screens
         private Texture2D _pixelTexture;
         private Texture2D _sampleImage;
         private Texture2D _conveyorTexture;
+        private Texture2D _endCapTexture;
         private SpriteFont _font;
         
         private Vector2 _sandboxPosition;
@@ -61,6 +62,7 @@ namespace MirageFlow.Shared.Screens
         {
             _content = content;
             _conveyorTexture = content.Load<Texture2D>("ConveyorBeltTexture");
+            _endCapTexture = content.Load<Texture2D>("EndCapTexture");
             _font = content.Load<SpriteFont>("Fonts/GameFont"); 
             
             LoadLevel(_currentLevelIndex);
@@ -162,6 +164,7 @@ namespace MirageFlow.Shared.Screens
             int conveyorX = (_graphicsDevice.Viewport.Width - _conveyorTexture.Width) / 2;
             _conveyorBelt = new ConveyorBelt();
             _conveyorBelt.Texture = _conveyorTexture;
+            _conveyorBelt.EndCapTexture = _endCapTexture;
             _conveyorBelt.Position = new Vector2(conveyorX, conveyorY);
 
             // Inventory grid placement below the conveyor belt
@@ -332,7 +335,7 @@ namespace MirageFlow.Shared.Screens
             var clearColor = new Color(20, 25, 30);
             _graphicsDevice.Clear(clearColor);
             
-            spriteBatch.Begin(samplerState: SamplerState.PointClamp);
+            spriteBatch.Begin(samplerState: SamplerState.PointWrap);
             
             Rectangle bgRect = new Rectangle((int)_sandboxPosition.X, (int)_sandboxPosition.Y, _sandbox.Width * _pixelScale, _sandbox.Height * _pixelScale);
             spriteBatch.Draw(_pixelTexture, bgRect, Color.DarkSlateGray * 0.4f);
@@ -363,10 +366,7 @@ namespace MirageFlow.Shared.Screens
                 bucket.Draw(spriteBatch);
             }
             
-            foreach (var bucket in _conveyorBelt.BeltBuckets)
-            {
-                bucket.Draw(spriteBatch);
-            }
+            // Note: _conveyorBelt.BeltBuckets are now drawn inside _conveyorBelt.Draw() to handle layering with end caps
 
             spriteBatch.Draw(_pixelTexture, _restartButtonRect, Color.DarkOrange);
             if (_font != null)
