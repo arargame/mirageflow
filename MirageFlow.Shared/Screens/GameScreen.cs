@@ -8,6 +8,15 @@ using System.Linq;
 
 namespace MirageFlow.Shared.Screens
 {
+    public class FlowParticle
+    {
+        public Vector2 Position;
+        public Color Color;
+        public Bucket Target;
+        public float Speed = 300f;
+        public bool IsActive = true;
+    }
+
     public class GameScreen : IScreen
     {
         private GraphicsDevice _graphicsDevice;
@@ -18,6 +27,8 @@ namespace MirageFlow.Shared.Screens
         private Texture2D _sampleImage;
         private Texture2D _conveyorTexture;
         private Texture2D _endCapTexture;
+        private Texture2D _bucketTexture;
+        private Texture2D _filledBucketsTexture;
         private SpriteFont _font;
         
         private Vector2 _sandboxPosition;
@@ -25,10 +36,12 @@ namespace MirageFlow.Shared.Screens
         
         private ConveyorBelt _conveyorBelt;
         private List<Bucket> _inventoryBuckets;
+        private List<FlowParticle> _flowParticles = new List<FlowParticle>();
         
         private Rectangle _restartButtonRect;
         private Rectangle _gridBounds;
         private List<Rectangle> _gridSlots;
+        private Dictionary<Color, int> _levelColorCounts;
 
         private List<Color> _paletteColors;
         private int _fps;
@@ -61,8 +74,10 @@ namespace MirageFlow.Shared.Screens
         public void LoadContent(Microsoft.Xna.Framework.Content.ContentManager content)
         {
             _content = content;
-            _conveyorTexture = content.Load<Texture2D>("ConveyorBeltTexture");
+            _conveyorTexture = content.Load<Texture2D>("BentSurfacePieceTexture");
             _endCapTexture = content.Load<Texture2D>("EndCapTexture");
+            _bucketTexture = content.Load<Texture2D>("BucketTexture");
+            _filledBucketsTexture = content.Load<Texture2D>("FilledBucketsTexture");
             _font = content.Load<SpriteFont>("Fonts/GameFont"); 
             
             LoadLevel(_currentLevelIndex);
@@ -159,60 +174,193 @@ namespace MirageFlow.Shared.Screens
                 }
             }
 
+            _levelColorCounts = colorCounts;
+
             // Conveyor Belt placed below sandbox
-            int conveyorY = (int)_sandboxPosition.Y + (_sandbox.Height * _pixelScale) + 20;
-            int conveyorX = (_graphicsDevice.Viewport.Width - _conveyorTexture.Width) / 2;
+            int conveyorY = (int)_sandboxPosition.Y + (_sandbox.Height * _pixelScale) + 32;
             _conveyorBelt = new ConveyorBelt();
             _conveyorBelt.Texture = _conveyorTexture;
             _conveyorBelt.EndCapTexture = _endCapTexture;
-            _conveyorBelt.Position = new Vector2(conveyorX, conveyorY);
+            
+            // Final calibrated dimensions from tuning
+            _conveyorBelt.Width = 525f;
+            _conveyorBelt.Height = 78f;
+            
+            // Center exclusively based on the belt width
+            int finalX = (_graphicsDevice.Viewport.Width - (int)_conveyorBelt.Width) / 2;
+            _conveyorBelt.Position = new Vector2(finalX, conveyorY);
+            
+            // Set fixed cap position for tuning 2.0 (Centered around 600px area)
+            _conveyorBelt.FixedCapPosition = new Vector2((_graphicsDevice.Viewport.Width - 600) / 2, conveyorY);
 
-            // Inventory grid placement below the conveyor belt
+            // --- DYNAMIC BUCKET CAPACITY ALGORITHM ---
+            // 1. Find the color with the most pixels to determine the "Standard Volume"
+            int maxPixels = 0;
+            foreach (var count in _levelColorCounts.Values)
+            {
+                if (count > maxPixels) maxPixels = count;
+            }
+
+            // 2. Set StandardCapacity so that the max color fits in exactly 4 buckets
+            int standardCapacity = (int)System.Math.Ceiling(maxPixels / 4.0);
+            if (standardCapacity < 1) standardCapacity = 1;
+
+            // 3. Setup Inventory Grid layout parameters
             _inventoryBuckets = new List<Bucket>();
             _gridSlots = new List<Rectangle>();
             
-            int bucketCols = 4;
-            int bucketWidth = 50;
-            int bucketHeight = 50;
-            float spacingX = 80f;
-            float spacingY = 80f;
-            int totalColors = colorCounts.Count;
-            int actualCols = System.Math.Min(bucketCols, totalColors);
-            if(actualCols == 0) actualCols = 1;
+            int bucketCols = 5;
+            float spacingX = 90f; // Increased for better spacing
+            float spacingY = 100f; // Increased for better spacing
             
-            float gridWidth = actualCols * spacingX;
-            int rowCount = (totalColors + bucketCols - 1) / bucketCols;
-            float gridHeight = rowCount * spacingY;
+            // Total buckets we'll create across all colors
+            int totalInventoryBuckets = 0;
+            foreach (var count in _levelColorCounts.Values)
+            {
+                totalInventoryBuckets += (int)System.Math.Min(4, System.Math.Ceiling(count / (double)standardCapacity));
+            }
+
+            // Center the grid based on total needed slots
+            int gridRows = (totalInventoryBuckets + bucketCols - 1) / bucketCols;
+            float gridWidth = System.Math.Min(bucketCols, totalInventoryBuckets) * spacingX;
+            float gridHeight = gridRows * spacingY;
+            
             float gridStartX = (_graphicsDevice.Viewport.Width - gridWidth) / 2;
-            int gridStartY = conveyorY + _conveyorTexture.Height + 40;
+            int gridStartY = (int)_conveyorBelt.Position.Y + (int)_conveyorBelt.Height + 80;
 
             // Save grid bound for drawing nice background frame
             _gridBounds = new Rectangle((int)gridStartX - 20, gridStartY - 20, (int)gridWidth + 40, (int)gridHeight + 40);
 
-            int i = 0;
-            foreach (var kvp in colorCounts)
+            // 4. Create buckets and slots
+            int colorIndex = 0;
+            foreach (var kvp in _levelColorCounts)
             {
-                float bx = gridStartX + (i % bucketCols) * spacingX;
-                float by = gridStartY + (i / bucketCols) * spacingY;
+                Color color = kvp.Key;
+                int count = kvp.Value;
+                int bucketsForThisColor = (int)System.Math.Min(4, System.Math.Ceiling(count / (double)standardCapacity));
 
-                var bucketBounds = new Rectangle((int)bx, (int)by, bucketWidth, bucketHeight);
-                _gridSlots.Add(bucketBounds);
+                for (int b = 0; b < bucketsForThisColor; b++)
+                {
+                    int row = colorIndex / bucketCols;
+                    int col = colorIndex % bucketCols;
 
-                _inventoryBuckets.Add(new Bucket 
-                { 
-                    Texture = _pixelTexture, 
-                    Position = new Vector2(bx, by), 
-                    TargetColor = kvp.Key, 
-                    Capacity = kvp.Value 
-                });
-                i++;
+                    float bx = gridStartX + col * spacingX;
+                    float by = gridStartY + row * spacingY;
+
+                    _gridSlots.Add(new Rectangle((int)bx, (int)by, 50, 50));
+                    _inventoryBuckets.Add(new Bucket 
+                    { 
+                        Texture = _bucketTexture, 
+                        FilledTexture = _filledBucketsTexture,
+                        Position = new Vector2(bx, by), 
+                        TargetColor = color, 
+                        Capacity = standardCapacity,
+                        IsInverted = (b > 0) // Only the first bucket of each color is active (upright)
+                    });
+
+                    colorIndex++;
+                }
             }
             
             _paletteColors = palette; // Save for debug
         }
 
+        private void HandleDebugInput(GameTime gameTime)
+        {
+            var kState = Keyboard.GetState();
+            float adjustSpeed = 50f; // Units per second
+            float dt = (float)gameTime.ElapsedGameTime.TotalSeconds;
+
+            if (_conveyorBelt != null)
+            {
+                // Adjust Height with Up/Down
+                if (kState.IsKeyDown(Keys.Up)) _conveyorBelt.Height += adjustSpeed * dt;
+                if (kState.IsKeyDown(Keys.Down)) _conveyorBelt.Height -= adjustSpeed * dt;
+
+                // Adjust Width with Left/Right
+                if (kState.IsKeyDown(Keys.Right)) _conveyorBelt.Width += adjustSpeed * dt;
+                if (kState.IsKeyDown(Keys.Left)) _conveyorBelt.Width -= adjustSpeed * dt;
+
+                // Move Position with WASD
+                if (kState.IsKeyDown(Keys.W)) _conveyorBelt.Position.Y -= adjustSpeed * dt;
+                if (kState.IsKeyDown(Keys.S)) _conveyorBelt.Position.Y += adjustSpeed * dt;
+                if (kState.IsKeyDown(Keys.A)) _conveyorBelt.Position.X -= adjustSpeed * dt;
+                if (kState.IsKeyDown(Keys.D)) _conveyorBelt.Position.X += adjustSpeed * dt;
+
+                // Dynamically update grid position during tuning to keep it below the belt
+                UpdateInventoryGridPosition();
+            }
+        }
+
+        private void UpdateInventoryGridPosition()
+        {
+            if (_conveyorBelt == null || _levelColorCounts == null) return;
+            
+            int bucketCols = 5;
+            float spacingX = 90f;
+            float spacingY = 100f;
+            
+            // 1. Determine StandardCapacity (same as ResetLevel)
+            int maxPixels = 0;
+            foreach (var count in _levelColorCounts.Values)
+            {
+                if (count > maxPixels) maxPixels = count;
+            }
+            int standardCapacity = (int)System.Math.Ceiling(maxPixels / 4.0);
+            if (standardCapacity < 1) standardCapacity = 1;
+
+            // 2. Calculate total inventory buckets generated
+            int totalInventoryBuckets = 0;
+            foreach (var count in _levelColorCounts.Values)
+            {
+                totalInventoryBuckets += (int)System.Math.Min(4, System.Math.Ceiling(count / (double)standardCapacity));
+            }
+
+            // 3. Calculate grid dimensions
+            int actualCols = System.Math.Min(bucketCols, totalInventoryBuckets);
+            if (actualCols < 1) actualCols = 1;
+            
+            int gridRows = (totalInventoryBuckets + bucketCols - 1) / bucketCols;
+            float gridWidth = actualCols * spacingX;
+            float gridHeight = gridRows * spacingY;
+            
+            float gridStartX = (_graphicsDevice.Viewport.Width - gridWidth) / 2;
+            int gridStartY = (int)_conveyorBelt.Position.Y + (int)_conveyorBelt.Height + 80;
+
+            // 4. Update the visual frame bounds
+            _gridBounds = new Rectangle((int)gridStartX - 20, gridStartY - 20, (int)gridWidth + 40, (int)gridHeight + 40);
+
+            // 5. Update actual bucket and slot positions
+            _gridSlots.Clear();
+            int bucketNum = 0;
+            foreach (var kvp in _levelColorCounts)
+            {
+                int countForThisColor = (int)System.Math.Min(4, System.Math.Ceiling(kvp.Value / (double)standardCapacity));
+
+                for (int b = 0; b < countForThisColor; b++)
+                {
+                    int row = bucketNum / bucketCols;
+                    int col = bucketNum % bucketCols;
+
+                    float bx = gridStartX + col * spacingX;
+                    float by = gridStartY + row * spacingY;
+
+                    _gridSlots.Add(new Rectangle((int)bx, (int)by, 50, 50));
+
+                    // If we already have initialized buckets, update their positions
+                    if (bucketNum < _inventoryBuckets.Count)
+                    {
+                        _inventoryBuckets[bucketNum].Position = new Vector2(bx, by);
+                    }
+
+                    bucketNum++;
+                }
+            }
+        }
+
         public void Update(GameTime gameTime)
         {
+            HandleDebugInput(gameTime);
             InputManager.Update();
             
             if (InputManager.IsMouseClicked())
@@ -245,7 +393,7 @@ namespace MirageFlow.Shared.Screens
                 _levelTimer += gameTime.ElapsedGameTime.TotalSeconds;
                 
                 _conveyorBelt.Update(gameTime);
-                HandleAbsorption();
+                UpdateSandFlow(gameTime);
                 _sandbox.Update();
 
                 // Check win condition
@@ -266,60 +414,127 @@ namespace MirageFlow.Shared.Screens
             }
         }
 
+        private void UpdateSandFlow(GameTime gameTime)
+        {
+            float dt = (float)gameTime.ElapsedGameTime.TotalSeconds;
+
+            // 1. Spawning FlowParticles from sandbox bottom
+            if (_sandbox != null && _conveyorBelt != null)
+            {
+                int bottomY = _sandbox.Height - 1;
+                for (int i = _conveyorBelt.BeltBuckets.Count - 1; i >= 0; i--)
+                {
+                    var bucket = _conveyorBelt.BeltBuckets[i];
+                    if (bucket.IsFull) continue;
+
+                    float sbLeftX = bucket.Position.X - _sandboxPosition.X;
+                    float sbRightX = bucket.Position.X + bucket.Width - _sandboxPosition.X;
+
+                    int startGridX = (int)(sbLeftX / _pixelScale);
+                    int endGridX = (int)(sbRightX / _pixelScale);
+
+                    if (startGridX < 0) startGridX = 0;
+                    if (endGridX >= _sandbox.Width) endGridX = _sandbox.Width - 1;
+
+                    if (startGridX <= endGridX && endGridX >= 0 && startGridX < _sandbox.Width)
+                    {
+                        for (int x = startGridX; x <= endGridX; x++)
+                        {
+                            Particle p = _sandbox.GetParticle(x, bottomY);
+                            // Only match color
+                            if (p.Type == 1 && p.Color == bucket.TargetColor)
+                            {
+                                // Remove from sandbox
+                                _sandbox.SetParticle(x, bottomY, new Particle { Type = 0 });
+                                
+                                // Create flow particle starting at the bottom of the sandbox
+                                float worldX = _sandboxPosition.X + (x * _pixelScale) + (_pixelScale / 2f);
+                                float worldY = _sandboxPosition.Y + (_sandbox.Height * _pixelScale);
+                                
+                                _flowParticles.Add(new FlowParticle
+                                {
+                                    Position = new Vector2(worldX, worldY),
+                                    Color = p.Color,
+                                    Target = bucket
+                                });
+                                // We emit one particle per column per frame per bucket to keep flow smooth but not too fast
+                            }
+                        }
+                    }
+                }
+            }
+
+            // 2. Update flowing particles
+            for (int i = _flowParticles.Count - 1; i >= 0; i--)
+            {
+                var fp = _flowParticles[i];
+                if (fp.Target == null || !fp.Target.IsOnBelt)
+                {
+                    _flowParticles.RemoveAt(i);
+                    continue;
+                }
+
+                // Vectorial tracking: move towards bucket top center
+                Vector2 targetPos = new Vector2(fp.Target.Position.X + fp.Target.Width / 2, fp.Target.Position.Y);
+                Vector2 dir = targetPos - fp.Position;
+                float dist = dir.Length();
+
+                if (dist < 8) // Snap to bucket on impact
+                {
+                    fp.Target.CurrentFill++;
+                    _flowParticles.RemoveAt(i);
+                }
+                else
+                {
+                    dir.Normalize();
+                    fp.Position += dir * fp.Speed * dt;
+                    
+                    // Add Jitter (organic randomness in both X and Y)
+                    // We use the particle's hash and position for a unique seed per frame
+                    System.Random rnd = new System.Random(fp.GetHashCode() + (int)(fp.Position.X * 10) + (int)(fp.Position.Y * 10));
+                    fp.Position.X += (float)(rnd.NextDouble() * 4.0 - 2.0); // -2 to +2 jitter
+                    fp.Position.Y += (float)(rnd.NextDouble() * 4.0 - 2.0); // -2 to +2 jitter
+                }
+            }
+        }
+
         private void HandleBucketClick(Point mousePos)
         {
             // Check if user clicked an inventory bucket
             for (int i = 0; i < _inventoryBuckets.Count; i++)
             {
                 var bucket = _inventoryBuckets[i];
-                if (bucket.Bounds.Contains(mousePos))
+                
+                // Only allow clicking upright (active) buckets
+                if (bucket.Bounds.Contains(mousePos) && !bucket.IsInverted)
                 {
-                    // Move it to the start of the conveyor belt!
-                    bucket.Position = new Vector2(_conveyorBelt.Position.X - bucket.Width, _conveyorBelt.Position.Y + (_conveyorBelt.Texture.Height - bucket.Height) / 2);
-                    _conveyorBelt.AddBucket(bucket);
-                    _inventoryBuckets.RemoveAt(i);
+                    // USE THE NEW CAPACITY CHECK FROM CONVEYOR
+                    if (_conveyorBelt.CanAddBucket(bucket.Width))
+                    {
+                        Color bucketColor = bucket.TargetColor;
+                        float entryX = _conveyorBelt.Position.X - bucket.Width;
+                        // Lifted 5px up from the default middle
+                        float entryY = _conveyorBelt.Position.Y + (_conveyorBelt.Height - bucket.Height) / 2 - 5;
+
+                        bucket.Position = new Vector2(entryX, entryY);
+                        _conveyorBelt.AddBucket(bucket);
+                        _inventoryBuckets.RemoveAt(i);
+
+                        // ACTIVATE NEXT BUCKET OF SAME COLOR (if any)
+                        foreach (var invBucket in _inventoryBuckets)
+                        {
+                            if (invBucket.TargetColor == bucketColor && invBucket.IsInverted)
+                            {
+                                invBucket.IsInverted = false;
+                                break;
+                            }
+                        }
+                    }
                     break;
                 }
             }
         }
 
-        private void HandleAbsorption()
-        {
-            for (int i = _conveyorBelt.BeltBuckets.Count - 1; i >= 0; i--)
-            {
-                var bucket = _conveyorBelt.BeltBuckets[i];
-                if (bucket.IsFull) continue;
-
-                float sbLeftX = bucket.Position.X - _sandboxPosition.X;
-                float sbRightX = bucket.Position.X + bucket.Width - _sandboxPosition.X;
-
-                int startGridX = (int)(sbLeftX / _pixelScale);
-                int endGridX = (int)(sbRightX / _pixelScale);
-
-                if (startGridX < 0) startGridX = 0;
-                if (endGridX >= _sandbox.Width) endGridX = _sandbox.Width - 1;
-
-                if (startGridX <= endGridX && endGridX >= 0 && startGridX < _sandbox.Width)
-                {
-                    bool absorbed = false;
-                    for (int y = _sandbox.Height - 1; y >= _sandbox.Height - 10; y--)
-                    {
-                        for (int x = startGridX; x <= endGridX; x++)
-                        {
-                            Particle p = _sandbox.GetParticle(x, y);
-                            if (p.Type == 1 && p.Color == bucket.TargetColor)
-                            {
-                                _sandbox.SetParticle(x, y, new Particle { Type = 0 }); 
-                                bucket.CurrentFill += 1;
-                                absorbed = true;
-                                if (bucket.IsFull) break;
-                            }
-                        }
-                        if (absorbed || bucket.IsFull) break;
-                    }
-                }
-            }
-        }
 
         public void Draw(SpriteBatch spriteBatch, GameTime gameTime)
         {
@@ -343,6 +558,28 @@ namespace MirageFlow.Shared.Screens
             _sandbox.Draw(spriteBatch, _sandboxPosition, _pixelScale, _pixelTexture);
             
             _conveyorBelt.Draw(spriteBatch);
+            
+            // Draw Flowing Particles
+            foreach (var fp in _flowParticles)
+            {
+                // Slightly larger particles for better visibility (+2px over standard pixel scale)
+                int renderSize = _pixelScale + 2; 
+                spriteBatch.Draw(_pixelTexture, new Rectangle((int)fp.Position.X, (int)fp.Position.Y, renderSize, renderSize), fp.Color);
+            }
+            
+            // --- CALIBRATION DEBUG INFO 2.0 ---
+            // Cap info (currently locked in ConveyorBelt.cs)
+            int fixedCapHeight = 100;
+            int globalCapX = (int)_conveyorBelt.FixedCapPosition.X;
+            int globalCapY = (int)_conveyorBelt.FixedCapPosition.Y;
+            int globalWidth = 600;
+            
+            string beltInfo = $"[BELT] Pos: {_conveyorBelt.Position.X:F0}, {_conveyorBelt.Position.Y:F0} | Size: {_conveyorBelt.Width:F0} x {_conveyorBelt.Height:F0}";
+            string capInfo = $"[CAPS] Pos: {globalCapX}, {globalCapY} | Base Area: {globalWidth} x {fixedCapHeight}";
+            
+            spriteBatch.DrawString(_font, beltInfo, new Vector2(10, 10), Color.Yellow);
+            spriteBatch.DrawString(_font, capInfo, new Vector2(10, 35), Color.Cyan);
+            // ----------------------------------
             
             // Draw inventory Grid Background and Border
             spriteBatch.Draw(_pixelTexture, _gridBounds, new Color(40, 45, 50));
