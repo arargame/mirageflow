@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <MSBuildAllProjects>$(MSBuildAllProjects);$(MSBuildThisFileFullPath)</MSBuildAllProjects>
+    <HasSharedItems>true</HasSharedItems>
+    <SharedGUID>7E31A2C0-5D14-4C89-9A2B-3F6D8E4B9C01</SharedGUID>
+  </PropertyGroup>
+  <PropertyGroup Label="Configuration">
+    <Import_RootNamespace>MirageFlowNew</Import_RootNamespace>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="$(MSBuildThisFileDirectory)Rendering\IsoCamera.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Rendering\MeshFactory.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Rendering\Scene3D.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Game\Bowl3D.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Game\Belt3D.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Game\SandPanel3D.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Game\SandParticles3D.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Screens\GameScreen3D.cs" />
+  </ItemGroup>
+</Project>

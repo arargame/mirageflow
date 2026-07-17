@@ -11,6 +11,7 @@ namespace MirageFlow.Shared.Screens
         private Texture2D _pixel;
         private SpriteFont _font;
         private Rectangle _playButtonRect;
+        private Rectangle _classicButtonRect;
         private Rectangle _quitButtonRect;
         private Rectangle _debugButtonRect;
 
@@ -26,9 +27,10 @@ namespace MirageFlow.Shared.Screens
             int btnHeight = 60;
             int xPos = (screenWidth - btnWidth) / 2;
 
-            _playButtonRect = new Rectangle(xPos, screenHeight / 2 - 80, btnWidth, btnHeight);
-            _quitButtonRect = new Rectangle(xPos, screenHeight / 2, btnWidth, btnHeight);
-            _debugButtonRect = new Rectangle(xPos, screenHeight / 2 + 80, btnWidth, btnHeight);
+            _playButtonRect = new Rectangle(xPos, screenHeight / 2 - 120, btnWidth, btnHeight);
+            _classicButtonRect = new Rectangle(xPos, screenHeight / 2 - 40, btnWidth, btnHeight);
+            _quitButtonRect = new Rectangle(xPos, screenHeight / 2 + 40, btnWidth, btnHeight);
+            _debugButtonRect = new Rectangle(xPos, screenHeight / 2 + 120, btnWidth, btnHeight);
         }
 
         public void LoadContent(Microsoft.Xna.Framework.Content.ContentManager content)
@@ -45,6 +47,14 @@ namespace MirageFlow.Shared.Screens
                 var mousePos = InputManager.CurrentMouseState.Position;
                 if (_playButtonRect.Contains(mousePos))
                 {
+                    // Yeni izometrik 3D deneyim (MirageFlowNew)
+                    var gameScreen3D = new MirageFlowNew.Screens.GameScreen3D();
+                    gameScreen3D.Initialize(_pixel.GraphicsDevice);
+                    ScreenManager.ChangeScreen(gameScreen3D, ScreenManager.Content);
+                }
+                else if (_classicButtonRect.Contains(mousePos))
+                {
+                    // Eski 2D ekran — olduğu gibi korunuyor
                     var gameScreen = new GameScreen();
                     gameScreen.Initialize(_pixel.GraphicsDevice);
                     ScreenManager.ChangeScreen(gameScreen, ScreenManager.Content);
@@ -71,6 +81,12 @@ namespace MirageFlow.Shared.Screens
             var playSize = _font.MeasureString(playText);
             var playPos = new Vector2(_playButtonRect.X + (_playButtonRect.Width - playSize.X) / 2, _playButtonRect.Y + (_playButtonRect.Height - playSize.Y) / 2);
             spriteBatch.DrawString(_font, playText, playPos, Color.White);
+
+            spriteBatch.Draw(_pixel, _classicButtonRect, Color.DarkSlateBlue);
+            var classicText = "CLASSIC";
+            var classicSize = _font.MeasureString(classicText);
+            var classicPos = new Vector2(_classicButtonRect.X + (_classicButtonRect.Width - classicSize.X) / 2, _classicButtonRect.Y + (_classicButtonRect.Height - classicSize.Y) / 2);
+            spriteBatch.DrawString(_font, classicText, classicPos, Color.White);
 
             spriteBatch.Draw(_pixel, _quitButtonRect, Color.DarkRed);
             var quitText = "QUIT";

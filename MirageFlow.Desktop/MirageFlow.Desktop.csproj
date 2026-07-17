@@ -30,4 +30,5 @@
     <MonoGameContentReference Include="..\MirageFlow.Shared\Content\Content.mgcb" />
   </ItemGroup>
   <Import Project="..\MirageFlow.Shared\MirageFlow.Shared.projitems" Label="Shared" />
+  <Import Project="..\MirageFlowNew\MirageFlowNew.projitems" Label="Shared" />
 </Project>

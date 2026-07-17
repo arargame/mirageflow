@@ -7,6 +7,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MirageFlow.Desktop", "Mirag
 EndProject
 Project("{D954291E-2A0B-460D-934E-DC6B0785DB48}") = "MirageFlow.Shared", "MirageFlow.Shared\MirageFlow.Shared.shproj", "{A1B2C3D4-E5F6-7890-1234-567890ABCDEF}"
 EndProject
+Project("{D954291E-2A0B-460D-934E-DC6B0785DB48}") = "MirageFlowNew", "MirageFlowNew\MirageFlowNew.shproj", "{7E31A2C0-5D14-4C89-9A2B-3F6D8E4B9C01}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -36,5 +38,7 @@ Global
 	GlobalSection(SharedMSBuildProjectFiles) = preSolution
 		MirageFlow.Shared\MirageFlow.Shared.projitems*{47d64bfa-f28d-4838-8284-48d1e42a25ac}*SharedItemsImports = 5
 		MirageFlow.Shared\MirageFlow.Shared.projitems*{a1b2c3d4-e5f6-7890-1234-567890abcdef}*SharedItemsImports = 13
+		MirageFlowNew\MirageFlowNew.projitems*{47d64bfa-f28d-4838-8284-48d1e42a25ac}*SharedItemsImports = 5
+		MirageFlowNew\MirageFlowNew.projitems*{7e31a2c0-5d14-4c89-9a2b-3f6d8e4b9c01}*SharedItemsImports = 13
 	EndGlobalSection
 EndGlobal
